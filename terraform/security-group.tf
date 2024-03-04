@@ -1,5 +1,5 @@
 resource "aws_security_group" "jenkins_sg" {
-  vpc_id = aws_vpc.my_vpc.id
+  vpc_id = module.vpc.vpc_id
 
   ingress {
     from_port   = 22
@@ -28,7 +28,7 @@ resource "aws_security_group" "jenkins_sg" {
 }
 
 resource "aws_security_group" "db_sg" {
-  vpc_id = aws_vpc.my_vpc.id
+  vpc_id = module.vpc.vpc_id
 
   ingress {
     from_port   = 3306

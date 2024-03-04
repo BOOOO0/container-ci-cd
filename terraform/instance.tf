@@ -1,5 +1,5 @@
 resource "aws_instance" "jenkins" {
-  subnet_id = aws_subnet.public_subnet_b.id
+  subnet_id = module.vpc.public_subnets[1]
 
   ami = var.amazon_linux_2023_ami
   instance_type = var.t3_medium
@@ -12,4 +12,8 @@ resource "aws_instance" "jenkins" {
   tags = {
     Name = "jenkins"
   }
+}
+
+output "jenkins_ip" {
+  value = aws_instance.jenkins.public_ip
 }
