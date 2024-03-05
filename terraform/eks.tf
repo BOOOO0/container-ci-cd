@@ -1,16 +1,15 @@
-data "aws_caller_identity" "current" {}
+# data "aws_caller_identity" "current" {}
 
-locals {
-  node_group_name        = "EKSCluster-node-group"
-  iam_role_policy_prefix = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy"
-}
+# locals {
+#   node_group_name        = "EKSCluster-node-group"
+#   iam_role_policy_prefix = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy"
+# }
 
 module "eks" {
     source = "terraform-aws-modules/eks/aws"
 
-    cluster_endpoint_public_access = false
-    cluster_endpoint_private_access = true
-
+    cluster_endpoint_public_access = true
+    
     cluster_name = "EKSCluster"
     cluster_version = "1.27"
 
@@ -28,20 +27,17 @@ module "eks" {
         max_size = 4
         desired_size = 2
 
-        iam_role_additional_policies = ["${local.iam_role_policy_prefix}/${module.iam_policy_autoscaling.name}"]
+        # iam_role_additional_policies = ["${local.iam_role_policy_prefix}/${module.iam_policy_autoscaling.name}"]
     }
     
-    cluster_addons = {
-        coredns = {
-            most_recent = true
-        }
-        kube-proxy = {
-            most_recent = true
-        }
-        vpc-cni = {
-            most_recent = true
-        }
-    }
+    # cluster_addons = {
+    #     kube-proxy = {
+    #         most_recent = true
+    #     }
+    #     vpc-cni = {
+    #         most_recent = true
+    #     }
+    # }
 
     # fargate_profile_defaults = {
     #     iam_role_additional_policies = {
