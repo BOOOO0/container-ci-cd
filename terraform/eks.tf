@@ -5,66 +5,65 @@
 #   iam_role_policy_prefix = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy"
 # }
 
-module "eks" {
-    source = "terraform-aws-modules/eks/aws"
+resource "aws_eks_cluster" "eks-cluster" {
+  name     = "EKSCluster"
+  role_arn = aws_iam_role.example.arn
 
-    cluster_endpoint_public_access = true
-    
-    cluster_name = "EKSCluster"
-    cluster_version = "1.27"
-
-    vpc_id = module.vpc.vpc_id
+  vpc_config {
     subnet_ids = module.vpc.private_subnets
+  }
 
-    eks_managed_node_group_defaults = {
-        ami_type               = "AL2_x86_64" # 
-        disk_size              = 20           # EBS 사이즈
-        instance_types         = ["t3.medium"]
-        use_custom_launch_template = false
-        # cluster-autoscaler에 사용 될 IAM 등록
+  depends_on = [
+    aws_iam_role_policy_attachment.example-AmazonEKSClusterPolicy,
+    aws_iam_role_policy_attachment.example-AmazonEKSVPCResourceController,
+    aws_iam_role_policy_attachment.example-Amazon-EBS-csi-driver,
+    aws_cloudwatch_log_group.eks_log_group,
+  ]
+}
 
-        min_size = 2
-        max_size = 4
-        desired_size = 2
+resource "aws_eks_node_group" "node_group" {
+  cluster_name    = aws_eks_cluster.eks-cluster.name
+  node_group_name = "node-group"
+  node_role_arn   = aws_iam_role.nodes.arn
+  subnet_ids      = module.vpc.private_subnets
 
-        # iam_role_additional_policies = ["${local.iam_role_policy_prefix}/${module.iam_policy_autoscaling.name}"]
+  scaling_config {
+    desired_size = 2
+    max_size     = 4
+    min_size     = 2
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.nodes-AmazonEKSWorkerNodePolicy,
+    aws_iam_role_policy_attachment.nodes-AmazonEKS_CNI_Policy,
+    aws_iam_role_policy_attachment.nodes-AmazonEC2ContainerRegistryReadOnly,
+  ]
+}
+
+resource "aws_eks_fargate_profile" "fargate_profile" {
+  cluster_name           = aws_eks_cluster.eks-cluster.name
+  fargate_profile_name   = "frontend"
+  pod_execution_role_arn = aws_iam_role.fargate.arn
+  subnet_ids             = module.vpc.private_subnets
+
+  selector {
+    namespace = "dev"
+    labels = {
+      env : "frontend"
     }
-    
-    # cluster_addons = {
-    #     kube-proxy = {
-    #         most_recent = true
-    #     }
-    #     vpc-cni = {
-    #         most_recent = true
-    #     }
-    # }
-
-    # fargate_profile_defaults = {
-    #     iam_role_additional_policies = {
-    #         additional = aws_iam_policy.additional.arn
-    #     }
-    # }
+  }
 }
 
-resource "aws_iam_policy" "additional" {
-  name = "iam-additional"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = [
-          "ec2:Describe*",
-        ]
-        Effect   = "Allow"
-        Resource = "*"
-      },
-    ]
-  })
+resource "aws_cloudwatch_log_group" "eks_log_group" {
+  name              = "/aws/eks/EKSCluster/cluster"
+  retention_in_days = 7
 }
 
-        # depends_on = [
-        #     aws_iam_role_policy_attachment.nodes-AmazonEKSWorkerNodePolicy,
-        #     aws_iam_role_policy_attachment.nodes-AmazonEKS_CNI_Policy,
-        #     aws_iam_role_policy_attachment.nodes-AmazonEC2ContainerRegistryReadOnly,
-        # ]
+resource "aws_eks_addon" "ebs-csi-driver" {
+  cluster_name                = aws_eks_cluster.eks-cluster.name
+  addon_name                  = "aws-ebs-csi-driver"
+  resolve_conflicts_on_update = "OVERWRITE"
+
+  depends_on = [ aws_iam_role_policy_attachment.example-Amazon-EBS-csi-driver ]
+}
+

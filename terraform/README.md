@@ -31,3 +31,64 @@
 ## Auto-Scaler
 
 - EKS 클러스터는 오토 스케일링을 위해 직접 kube-system에 Auto-scaler의 IAM 정책을 적용하고 설치해줘야 한다.
+
+- 이건 Pod Scaler를 의미하는 것이고 노드 그룹의 오토스케일링은 명시만 하면 된다. EC2 오토 스케일링과 동일하다.
+
+## Helm
+
+```bash
+curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 > get_helm.sh
+chmod 700 get_helm.sh
+./get_helm.sh
+```
+
+## YAML
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev
+```
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-apps
+  namespace: dev
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      env: frontend
+  template:
+    metadata:
+      labels:
+        env: frontend
+    spec:
+      containers:
+        - name: frontend-apps
+          image: nginx:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: dev
+spec:
+  selector:
+    env: frontend
+  type: LoadBalancer
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+```
+
+- 여기까지가 fargate 테스트
+
+-
