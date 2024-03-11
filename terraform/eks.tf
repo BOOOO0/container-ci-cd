@@ -1,10 +1,3 @@
-# data "aws_caller_identity" "current" {}
-
-# locals {
-#   node_group_name        = "EKSCluster-node-group"
-#   iam_role_policy_prefix = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy"
-# }
-
 resource "aws_eks_cluster" "eks-cluster" {
   name     = "EKSCluster"
   role_arn = aws_iam_role.example.arn
@@ -16,10 +9,19 @@ resource "aws_eks_cluster" "eks-cluster" {
   depends_on = [
     aws_iam_role_policy_attachment.example-AmazonEKSClusterPolicy,
     aws_iam_role_policy_attachment.example-AmazonEKSVPCResourceController,
-    aws_iam_role_policy_attachment.example-Amazon-EBS-csi-driver,
     aws_cloudwatch_log_group.eks_log_group,
   ]
 }
+
+# data "tls_certificate" "demo_cert" {
+#  url = aws_eks_cluster.eks-cluster.identity.0.oidc.0.issuer
+# }
+
+# resource "aws_iam_openid_connect_provider" "cluster" {
+#   client_id_list  = ["sts.amazonaws.com"]
+#   thumbprint_list = [data.tls_certificate.demo_cert.certificates[0].sha1_fingerprint]
+#   url             = aws_eks_cluster.eks-cluster.identity.0.oidc.0.issuer
+# }
 
 resource "aws_eks_node_group" "node_group" {
   cluster_name    = aws_eks_cluster.eks-cluster.name
@@ -59,11 +61,10 @@ resource "aws_cloudwatch_log_group" "eks_log_group" {
   retention_in_days = 7
 }
 
-resource "aws_eks_addon" "ebs-csi-driver" {
-  cluster_name                = aws_eks_cluster.eks-cluster.name
-  addon_name                  = "aws-ebs-csi-driver"
-  resolve_conflicts_on_update = "OVERWRITE"
+# resource "aws_eks_addon" "ebs-csi-driver" {
+#   cluster_name                = aws_eks_cluster.eks-cluster.name
+#   addon_name                  = "aws-ebs-csi-driver"
+#   addon_version               = "v1.28.0-eksbuild.1"
 
-  depends_on = [ aws_iam_role_policy_attachment.example-Amazon-EBS-csi-driver ]
-}
-
+#   service_account_role_arn = aws_iam_role.csi-driver-role.arn
+# }

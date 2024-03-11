@@ -92,3 +92,70 @@ spec:
 - 여기까지가 fargate 테스트
 
 -
+
+## Addon 설치
+
+- 수동으로 설치
+
+```bash
+eksctl utils associate-iam-oidc-provider --region=ap-northeast-2 --cluster=EKSCluster --approve
+```
+
+```bash
+eksctl create iamserviceaccount \
+    --name ebs-csi-controller-sa \
+    --namespace kube-system \
+    --cluster EKSCluster \
+    --role-name eks-cluster-example-csi \
+    --role-only \
+    --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
+    --approve
+```
+
+```terraform
+  # aws_eks_addon.ebs-csi-driver is tainted, so must be replaced
+-/+ resource "aws_eks_addon" "ebs-csi-driver" {
+      ~ addon_version               = "v1.28.0-eksbuild.1" -> (known after apply)
+      ~ arn                         = "arn:aws:eks:ap-northeast-2:637423467729:addon/EKSCluster/aws-ebs-csi-driver/26c715ae-a089-9ef2-7c1a-f319d31ee5eb" -> (known after apply)
+      + configuration_values        = (known after apply)
+      ~ created_at                  = "2024-03-11T02:35:15Z" -> (known after apply)
+      ~ id                          = "EKSCluster:aws-ebs-csi-driver" -> (known after apply)
+      ~ modified_at                 = "2024-03-11T02:36:02Z" -> (known after apply)
+      - service_account_role_arn    = "arn:aws:iam::637423467729:role/AmazonEKS_EBS_CSI_DriverRole" -> null
+      - tags                        = {} -> null
+      ~ tags_all                    = {} -> (known after apply)
+        # (3 unchanged attributes hidden)
+    }
+```
+
+- Addon을 인식해서 보여주는데 role을 만들어서 이 Addon에 입혀줘야 하는 것 같다.
+
+```
+tags                      = {
+          - "alpha.eksctl.io/cluster-oidc-enabled" = "true" -> null
+        }
+      ~ tags_all                  = {
+          - "alpha.eksctl.io/cluster-oidc-enabled" = "true"
+        } -> (known after apply)
+
+```
+
+- 이건 EKS 리소스의 tags 항목인데 이부분이 oidc를 on하는 것 같고 이것 명시 후 Role 만들고 Addon에 Role 적용해서 만들면
+
+- CSI 드라이버 설치까지 자동화 완료
+
+- 프로메테우스 설치를 위한 준비 CSI 드라이버 뿐만 아니라 스토리지클래스 리소스도 배포 적용해야 한다.
+
+```yaml
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: prometheus
+  namespace: prometheus
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: gp2
+reclaimPolicy: Retain
+mountOptions:
+  - debug
+```
