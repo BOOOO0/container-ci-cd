@@ -13,16 +13,6 @@ resource "aws_eks_cluster" "eks-cluster" {
   ]
 }
 
-# data "tls_certificate" "demo_cert" {
-#  url = aws_eks_cluster.eks-cluster.identity.0.oidc.0.issuer
-# }
-
-# resource "aws_iam_openid_connect_provider" "cluster" {
-#   client_id_list  = ["sts.amazonaws.com"]
-#   thumbprint_list = [data.tls_certificate.demo_cert.certificates[0].sha1_fingerprint]
-#   url             = aws_eks_cluster.eks-cluster.identity.0.oidc.0.issuer
-# }
-
 resource "aws_eks_node_group" "node_group" {
   cluster_name    = aws_eks_cluster.eks-cluster.name
   node_group_name = "node-group"
@@ -60,11 +50,3 @@ resource "aws_cloudwatch_log_group" "eks_log_group" {
   name              = "/aws/eks/EKSCluster/cluster"
   retention_in_days = 7
 }
-
-# resource "aws_eks_addon" "ebs-csi-driver" {
-#   cluster_name                = aws_eks_cluster.eks-cluster.name
-#   addon_name                  = "aws-ebs-csi-driver"
-#   addon_version               = "v1.28.0-eksbuild.1"
-
-#   service_account_role_arn = aws_iam_role.csi-driver-role.arn
-# }

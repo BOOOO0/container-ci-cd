@@ -142,7 +142,9 @@ tags                      = {
 
 - 이건 EKS 리소스의 tags 항목인데 이부분이 oidc를 on하는 것 같고 이것 명시 후 Role 만들고 Addon에 Role 적용해서 만들면
 
-- CSI 드라이버 설치까지 자동화 완료
+- CSI 드라이버 설치까지 자동화 완료 ------ 실패 ㅠ
+
+## Prometheus + Grafana
 
 - 프로메테우스 설치를 위한 준비 CSI 드라이버 뿐만 아니라 스토리지클래스 리소스도 배포 적용해야 한다.
 
@@ -158,4 +160,102 @@ parameters:
 reclaimPolicy: Retain
 mountOptions:
   - debug
+```
+
+```bash
+# add prometheus Helm repo
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
+# add grafana Helm repo
+helm repo add grafana https://grafana.github.io/helm-charts
+
+```
+
+```bash
+kubectl create namespace prometheus
+
+helm install prometheus prometheus-community/prometheus \
+--namespace prometheus \
+--set alertmanager.persistentVolume.storageClass="gp2" \
+--set server.persistentVolume.storageClass="gp2"
+```
+
+```bash
+mkdir ${HOME}/environment/grafana
+
+cat << EoF > ${HOME}/environment/grafana/grafana.yaml
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+    - name: Prometheus
+      type: prometheus
+      url: http://prometheus-server.prometheus.svc.cluster.local
+      access: proxy
+      isDefault: true
+EoF
+
+```
+
+```bash
+kubectl create namespace grafana
+
+helm install grafana grafana/grafana \
+    --namespace grafana \
+    --set persistence.storageClassName="gp2" \
+    --set persistence.enabled=true \
+    --set adminPassword='EKS!sAWSome' \
+    --values ${HOME}/environment/grafana/grafana.yaml \
+    --set service.type=LoadBalancer
+
+```
+
+- External-IP로 접속한 다음
+
+- Click '+' button on left panel and select ‘Import’.
+  Enter 3119 dashboard id under Grafana.com Dashboard.
+  Click ‘Load’.
+  Select ‘Prometheus’ as the endpoint under prometheus data sources drop down.
+  Click ‘Import’.
+
+## 일단 프론트 Fargate에 배포
+
+```YAML
+cat <<EOF > ~/nginx-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-apps
+  namespace: dev
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      env: frontend
+  template:
+    metadata:
+      labels:
+        env: frontend
+    spec:
+      containers:
+      - name: frontend-apps
+        image: dodo133/ticket4jo-frontend
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: dev
+  labels:
+    env: dev
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+  selector:
+    env: frontend
+  type: LoadBalancer
+EOF
 ```

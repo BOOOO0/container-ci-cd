@@ -6,12 +6,16 @@ variable "amazon_linux_2023_ami" {
   default = "ami-0bfd23bc25c60d5a1"
 }
 
+variable "amazon_2023_tokyo" {
+  default = "ami-039e8f15ccb15368a"
+}
+
 variable "t3_micro" {
   default = "t3.micro"
 }
 
 variable "ec2_key" {
-  default = "my_key"
+  default = "jenkins_key_tokyo"
 }
 
 variable "t3_medium" {
@@ -21,7 +25,7 @@ variable "t3_medium" {
 variable "azs" {
   description = "A list of availability zones names or ids in the region"
   type = list(string)
-  default = ["ap-northeast-2a", "ap-northeast-2b", "ap-northeast-2c", "ap-northeast-2d"]
+  default = ["ap-northeast-1a", "ap-northeast-1c", "ap-northeast-1d"]
 }
 
 variable "cluster_name" {

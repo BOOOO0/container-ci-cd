@@ -30,16 +30,6 @@ resource "aws_iam_role_policy_attachment" "example-AmazonEKSVPCResourceControlle
   role       = aws_iam_role.example.name
 }
 
-# resource "aws_iam_role" "csi-driver-role" {
-#   name               = "eks-cluster-example-csi"
-#   assume_role_policy = data.aws_iam_policy_document.assume_role.json
-# }
-
-# resource "aws_iam_role_policy_attachment" "example-Amazon-EBS-csi-driver" {
-#   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
-#   role       = aws_iam_role.csi-driver-role.name
-# }
-
 # role for nodegroup
 
 resource "aws_iam_role" "nodes" {

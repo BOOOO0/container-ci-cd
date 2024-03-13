@@ -199,3 +199,56 @@ eksctl create iamserviceaccount \
 - 클러스터 내 모든 서비스어카운트를 조회, addon에 적용된 모든 정책을 조회하는 것과 동일하다고 볼 수 있다.
 
 - 일단 테라폼으로 구축이 먼저가 되었으니 그것부터 하자.
+
+## ArgoCD
+
+- ArgoCD 설치
+
+```bash
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.4.7/manifests/install.yaml
+```
+
+- Argo CLI 설치
+
+```bash
+sudo curl --silent --location -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/download/v2.4.7/argocd-linux-amd64
+
+sudo chmod +x /usr/local/bin/argocd
+
+```
+
+- ArgoCD 서버 서비스 로드밸런서로 변경
+
+```bash
+kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
+```
+
+```bash
+export ARGOCD_SERVER=`kubectl get svc argocd-server -n argocd -o json | jq --raw-output '.status.loadBalancer.ingress[0].hostname'`
+
+export ARGO_PWD=`kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d`
+
+argocd login $ARGOCD_SERVER --username admin --password $ARGO_PWD --insecure
+
+```
+
+C:.
+└─terraform
+│ .gitignore
+│ eks-iam.tf
+│ eks.tf
+│ instance.tf
+│ key.tf
+│ provider.tf
+│ security-group.tf
+│ variable.tf
+│ vpc.tf
+│
+├─.terraform
+│ └─modules
+│ │
+│ └─vpc
+│
+└─script
+jenkins.sh

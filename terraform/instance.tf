@@ -1,7 +1,7 @@
 resource "aws_instance" "jenkins" {
   subnet_id = module.vpc.public_subnets[1]
 
-  ami = var.amazon_linux_2023_ami
+  ami = var.amazon_2023_tokyo
   instance_type = var.t3_medium
   key_name = var.ec2_key
 
