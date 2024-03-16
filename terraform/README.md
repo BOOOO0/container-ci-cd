@@ -259,3 +259,5 @@ spec:
   type: LoadBalancer
 EOF
 ```
+
+- EKS 모듈을 사용하면 보안 그룹과 IAM Role이 자동으로 생성되어 적용된다.

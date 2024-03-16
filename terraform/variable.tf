@@ -15,7 +15,7 @@ variable "t3_micro" {
 }
 
 variable "ec2_key" {
-  default = "jenkins_key_tokyo"
+  default = "tokyo_jenkins"
 }
 
 variable "t3_medium" {

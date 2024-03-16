@@ -18,7 +18,9 @@ module "vpc" {
   private_subnets = [for k, v in var.azs:
                       cidrsubnet(var.cidr_vpc, 8, k + 20)]
 
-  create_database_subnet_group           = true
+  database_subnets = [for k, v in var.azs:
+                      cidrsubnet(var.cidr_vpc, 8, k + 40)]                   
+
   create_database_subnet_route_table     = true
 
   enable_dns_hostnames = true
@@ -28,9 +30,11 @@ module "vpc" {
 
   public_subnet_tags = {
     "kubernetes.io/role/elb" = 1
+    "kubernetes.io/cluster/EKSCluster" = "shared"
   }
 
   private_subnet_tags = {
     "kubernetes.io/role/internal-elb" = 1
+    "kubernetes.io/cluster/EKSCluster" = "shared"
   }
 }
